@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ilmu Falak Pro</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --bg-gradient: linear-gradient(135deg, #f0fdf4 0%, #e0f2fe 100%);
+            --card-bg: rgba(255, 255, 255, 0.95);
+        }
+        body {
+            background: var(--bg-gradient);
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            color: #1e293b;
+            min-height: 100vh;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+        }
+        /* Page Transition System */
+        .view-section {
+            display: none;
+            animation: fadeIn 0.4s ease-out;
+            padding-bottom: 50px;
+        }
+        .view-section.active { display: block; }
+        
+        .container { max-width: 900px; margin-top: 40px; }
+        .header-section { text-align: center; margin-bottom: 30px; animation: fadeInDown 0.8s ease-out; }
+        .header-section h1 { font-weight: 800; color: #0f172a; letter-spacing: -1px; font-size: clamp(1.8rem, 5vw, 2.5rem); }
+        .header-section h1 i { color: var(--primary); }
+        
+        .card {
+            background: var(--card-bg);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+            margin-bottom: 25px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .card:hover { box-shadow: 0 15px 35px rgba(0, 0, 0, 0.08); }
+        .card-header {
+            background: transparent;
+            border-bottom: 2px solid rgba(37, 99, 235, 0.1);
+            color: var(--primary);
+            font-weight: 700;
+            font-size: 1.15rem;
+            padding: 15px 24px;
+        }
+        
+        .gps-status-card {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 10px 20px rgba(37, 99, 235, 0.2);
+            flex-wrap: wrap; /* responsive */
+            gap: 15px;
+        }
+        .btn-gps {
+            background: rgba(255,255,255,0.2);
+            color: white; border: 1px solid rgba(255,255,255,0.4);
+            border-radius: 8px; padding: 8px 16px; font-weight: 600;
+            transition: all 0.3s;
+            white-space: nowrap;
+        }
+        .btn-gps:hover { background: white; color: var(--primary); }
+        
+        .form-label { font-weight: 600; color: #475569; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px;}
+        .form-control, .form-select { border-radius: 8px; border: 1px solid #cbd5e1; padding: 10px 15px; }
+        .form-control:focus, .form-select:focus { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1); }
+        .form-control[readonly] { background-color: #f1f5f9; cursor: not-allowed; }
+        
+        .btn-primary {
+            background-color: var(--primary); padding: 14px 32px; border-radius: 12px;
+            font-weight: 700; font-size: 1.1rem; box-shadow: 0 8px 20px rgba(37, 99, 235, 0.3); transition: all 0.3s;
+        }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 12px 25px rgba(37, 99, 235, 0.4); }
+        
+        .result-box {
+            background: white; border-radius: 16px; padding: 30px; margin-top: 30px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.08); display: none; border-top: 5px solid #10b981;
+        }
+        
+        /* Fullscreen View Styles */
+        #fullscreen-view {
+            background: #020617; 
+            color: #f8fafc;
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            right: 0; 
+            bottom: 0; 
+            height: 100dvh; 
+            z-index: 9999; 
+            overflow-y: auto; 
+            overflow-x: hidden; 
+            padding: 2rem 1rem 8rem 1rem; 
+            -webkit-overflow-scrolling: touch; 
+            overscroll-behavior: contain; 
+        }
+
+        .fs-clock { font-family: 'Courier New', Courier, monospace; font-size: clamp(3rem, 10vw, 4.5rem); font-weight: 900; text-shadow: 0 0 20px rgba(16, 185, 129, 0.4); line-height: 1; }
+        .fs-date { font-size: clamp(1.1rem, 4vw, 1.5rem); color: #cbd5e1; }
+        .fs-pasaran { font-size: clamp(1.5rem, 6vw, 2rem); color: #f59e0b; font-weight: 700; }
+        
+        /* Responsif untuk Kanvas Kompas */
+        #fs-compass {
+            background: rgba(255,255,255,0.02); 
+            border-radius: 50%; 
+            box-shadow: 0 0 40px rgba(0,0,0,0.8);
+            max-width: 100%;
+            height: auto;
+            aspect-ratio: 1/1;
+            touch-action: pan-y; 
+        }
+
+        /* Report View Styles */
+        #report-view { background: #f8fafc; min-height: 100vh; padding: 2rem 1rem; }
+        .report-content {
+            font-family: 'Consolas', 'Courier New', monospace;
+            background: #ffffff; color: #1e293b; padding: 30px;
+            border-radius: 12px; border: 1px solid #cbd5e1;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            font-size: clamp(0.85rem, 2.5vw, 1rem); line-height: 1.8;
+            max-width: 800px; margin: 0 auto;
+            overflow-x: auto;
+        }
+
+        /* Switch Toggle Style */
+        .custom-switch { display: flex; align-items: center; justify-content: flex-start; height: 100%; padding-top: 10px; }
+        .form-check-input:checked { background-color: var(--primary); border-color: var(--primary); }
+
+        .text-emerald { color: #10b981 !important; }
+
+        @keyframes fadeInDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    </style>
+</head>
+<body>
+
+<div id="main-view" class="view-section active">
+    <div class="container">
+        <div class="header-section">
+            <h1><i class="fa-solid fa-moon"></i> Falak Online <span style="color: #64748b; font-weight: 300;">Pro</span></h1>
+            <p class="text-muted mt-2 fw-bold">Kalkulator Astronomi Arah Kiblat & Posisi Matahari Global <br />
+            Oleh : M.Sholeh Bakhruddin</p>
+        </div>
+
+        <div class="gps-status-card" id="gps-card">
+            <div class="gps-info w-75">
+                <h5 class="mb-1"><i class="fa-solid fa-location-dot me-2"></i> Lokasi Saat Ini</h5>
+                <p id="location-name" class="m-0 fs-6">Menunggu izin akses lokasi...</p>
+            </div>
+            <button class="btn-gps" onclick="requestLocation()" type="button">
+                <i class="fa-solid fa-rotate me-1"></i> Perbarui GPS
+            </button>
+        </div>
+
+        <form id="falak-form">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card h-100">
+                        <div class="card-header"><i class="fa-solid fa-map-location-dot me-2"></i> Garis Lintang</div>
+                        <div class="card-body">
+                            <div class="row g-2">
+                                <div class="col-6 col-sm-3"><label class="form-label">Derajat</label><input type="number" class="form-control" id="lat-deg" min="0" max="90" required></div>
+                                <div class="col-6 col-sm-3"><label class="form-label">Menit</label><input type="number" class="form-control" id="lat-min" min="0" max="59" value="0"></div>
+                                <div class="col-6 col-sm-3"><label class="form-label">Detik</label><input type="number" class="form-control" id="lat-sec" min="0" max="59" step="0.01" value="0"></div>
+                                <div class="col-6 col-sm-3"><label class="form-label">Lintang</label>
+                                    <select class="form-select" id="lat-hemi">
+                                        <option value="1">Utara</option><option value="-1" selected>Selatan</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card h-100">
+                        <div class="card-header"><i class="fa-solid fa-globe me-2"></i> Garis Bujur</div>
+                        <div class="card-body">
+                            <div class="row g-2">
+                                <div class="col-6 col-sm-3"><label class="form-label">Derajat</label><input type="number" class="form-control" id="lon-deg" min="0" max="180" required></div>
+                                <div class="col-6 col-sm-3"><label class="form-label">Menit</label><input type="number" class="form-control" id="lon-min" min="0" max="59" value="0"></div>
+                                <div class="col-6 col-sm-3"><label class="form-label">Detik</label><input type="number" class="form-control" id="lon-sec" min="0" max="59" step="0.01" value="0"></div>
+                                <div class="col-6 col-sm-3"><label class="form-label">Lintang</label>
+                                    <select class="form-select" id="lon-hemi">
+                                        <option value="1" selected>Timur</option><option value="-1">Barat</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-header"><i class="fa-solid fa-clock me-2"></i> Pengaturan Waktu & Zona</div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-6 col-md-3">
+                            <label class="form-label">Tanggal</label>
+                            <input type="date" class="form-control" id="calc-date" required>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <label class="form-label">Waktu Lokal</label>
+                            <input type="time" class="form-control" id="calc-time" required step="1">
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <label class="form-label">Zona Waktu</label>
+                            <select class="form-select" id="calc-tz"></select>
+                        </div>
+                        <div class="col-12 col-md-2 custom-switch">
+                            <div class="form-check form-switch w-100 p-0 m-0 d-flex flex-row-reverse flex-md-column justify-content-between align-items-center align-items-md-start">
+                                <input class="form-check-input ms-0 mt-1 mb-md-2" style="transform: scale(1.3); cursor: pointer;" type="checkbox" id="auto-time-switch" checked>
+                                <label class="form-check-label fw-bold ms-2 ms-md-0 text-primary" style="cursor: pointer;" for="auto-time-switch">Auto Time</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-center mt-4">
+                <button type="submit" class="btn btn-primary btn-lg w-100">
+                    <i class="fa-solid fa-calculator me-2"></i> Hitung Data Falak
+                </button>
+            </div>
+        </form>
+
+        <div class="result-box" id="result-box">
+            <h4 class="mb-3 fw-bold text-success"><i class="fa-solid fa-check-circle me-2"></i> Perhitungan Berhasil</h4>
+            <p class="text-muted">Data dasar telah dihitung. Silakan buka menu di bawah ini untuk melihat detail astronomi atau visualisasi kompas Real-Time.</p>
+            <div class="d-flex flex-column flex-md-row gap-3 mt-4">
+                <button class="btn btn-outline-primary w-100 py-3 fw-bold" type="button" onclick="openReport()">
+                    <i class="fa-solid fa-file-alt me-2"></i> Laporan Terperinci
+                </button>
+                <button class="btn btn-dark w-100 py-3 fw-bold" type="button" onclick="openFullscreen()">
+                    <i class="fa-solid fa-expand me-2"></i> Tampilan Layar Penuh (Live)
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="report-view" class="view-section">
+    <div class="container">
+        <button class="btn btn-secondary mb-4" onclick="closeView('report-view')"><i class="fa-solid fa-arrow-left me-2"></i> Kembali ke Menu Utama</button>
+        <div class="report-content" id="report-text">
+            </div>
+    </div>
+</div>
+
+<div id="fullscreen-view" class="view-section">
+    <div class="d-flex justify-content-between align-items-center mb-2 px-2">
+        <button class="btn btn-outline-light" onclick="closeView('fullscreen-view')"><i class="fa-solid fa-arrow-left me-2"></i> Kembali</button>
+        <div class="text-muted small d-md-none"><i class="fa-solid fa-arrows-up-down me-1"></i> Gulir untuk detail</div>
+    </div>
+    
+    <div class="text-center mt-3">
+        <h2 id="fs-pasaran" class="fs-pasaran mb-1">...</h2>
+        <h4 id="fs-date" class="fs-date mb-3">...</h4>
+        <div id="fs-time" class="fs-clock text-emerald mb-2">00:00:00</div>
+        <div id="fs-tz-badge" class="badge bg-secondary fs-6 mb-4 px-3 py-2"></div>
+    </div>
+    
+    <div class="container text-center mb-3">
+        <div class="p-3" style="background: rgba(16, 185, 129, 0.1); border-left: 4px solid #10b981; border-radius: 8px; font-size: clamp(0.85rem, 3vw, 1rem);">
+            <strong>PANDUAN ARAH KIBLAT:</strong> Letakkan Perangkat Anda mendatar. Bagian atas menghadap arah Utara sungguhan. Jika berada di luar ruangan saat terkena sinar matahari, cukup perhatikan arah bayangan benda tegak. <strong>Garis Hijau</strong> adalah arah persis Ka'bah dari titik koordinat Anda saat ini.
+        </div>
+    </div>
+
+    <div class="d-flex justify-content-center mb-4 mt-2 px-2">
+        <canvas id="fs-compass" width="350" height="350"></canvas>
+    </div>
+    
+    <div class="text-center mb-4">
+        <div class="d-inline-block text-start p-3" style="background: rgba(255,255,255,0.1); border-radius: 12px; border: 1px solid rgba(255,255,255,0.2); font-size: clamp(0.8rem, 3vw, 1rem); min-width: 80%;">
+            <div class="mb-2">
+                <span style="display:inline-block; width:25px; height:4px; background:#ef4444; vertical-align:middle; margin-right:10px; border-radius:2px;"></span>
+                <strong>Posisi Matahari:</strong> <span id="fs-sun-deg" class="fw-bold text-light ms-1">...</span>
+            </div>
+            <div class="mb-2">
+                <span style="display:inline-block; width:25px; height:4px; background:#facc15; vertical-align:middle; margin-right:10px; border-radius:2px;"></span>
+                <strong>Arah Bayangan:</strong> <span id="fs-shadow-deg" class="fw-bold text-light ms-1">...</span>
+            </div>
+            <div class="mb-3">
+                <span style="display:inline-block; width:25px; height:4px; background:#10b981; vertical-align:middle; margin-right:10px; border-radius:2px;"></span>
+                <strong>Arah Kiblat:</strong> <span id="fs-qibla-deg" class="fw-bold text-light ms-1">...</span>
+            </div>
+            
+            <div class="mt-3 pt-3" style="border-top: 1px dashed rgba(255,255,255,0.3);">
+                <div class="text-info fw-bold mb-1" style="font-size: 1.05rem;">
+                    <i class="fa-solid fa-route me-2"></i>Jarak ke Ka'bah: <span id="fs-distance" class="text-light ms-1">...</span>
+                </div>
+                <div style="font-size: 0.8rem; color: #cbd5e1; line-height: 1.5; margin-top: 6px;">
+                    <em>(Keterangan Jarak: Jarak ini dihitung berdasarkan rumus permukaan bumi, yaitu tarikan garis lurus terpendek yang melengkung secara akurat mengikuti bentuk bulat bumi dari koordinat lokasi Anda langsung menuju titik koordinat Ka'bah)</em>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="text-center px-3 mt-4">
+        <div class="p-3 rounded" style="background: rgba(0,0,0,0.5); border: 1px solid #334155;">
+            <p class="text-light mb-1 small text-uppercase">Rashdul Qiblah :</p>
+            <h4 id="fs-validity" class="fw-bold text-warning mb-0 mt-2" style="letter-spacing: 0.5px; font-size: clamp(1rem, 4vw, 1.2rem);">Menghitung status...</h4>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- Global State ---
+    let lastCalcData = {};
+    let liveInterval = null;
+    let formAutoTimeInterval = null;
+    let fullLocationName = "Koordinat Diinput Manual / Alamat Belum Dilacak";
+    const BULAN = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+
+    // --- Timezone Population (Optimized) ---
+    function initTimezones() {
+        const tzSelect = document.getElementById('calc-tz');
+        tzSelect.innerHTML = '';
+        for(let i = -12; i <= 14; i++) {
+            let opt = document.createElement('option');
+            opt.value = i;
+            
+            // Format zona waktu yang bersih (misal: GMT +7, GMT -4, GMT 0)
+            let label = i === 0 ? `GMT 0` : (i > 0 ? `GMT +${i}` : `GMT ${i}`);
+            
+            if(i === 7) label += ' (WIB / Asia/Jakarta)';
+            if(i === 8) label += ' (WITA / Asia/Makassar)';
+            if(i === 9) label += ' (WIT / Asia/Jayapura)';
+            
+            opt.text = label;
+            tzSelect.appendChild(opt);
+        }
+        let offset = -(new Date().getTimezoneOffset() / 60);
+        if(offset >= -12 && offset <= 14) tzSelect.value = offset;
+    }
+
+    // --- LOGIKA FORM WAKTU ---
+    function updateFormTime() {
+        const now = new Date();
+        document.getElementById('calc-date').value = now.getFullYear() + '-' + pad0(now.getMonth()+1) + '-' + pad0(now.getDate());
+        document.getElementById('calc-time').value = `${pad0(now.getHours())}:${pad0(now.getMinutes())}:${pad0(now.getSeconds())}`;
+    }
+
+    function toggleAutoTime() {
+        const isAuto = document.getElementById('auto-time-switch').checked;
+        const dateInput = document.getElementById('calc-date');
+        const timeInput = document.getElementById('calc-time');
+
+        if (isAuto) {
+            dateInput.readOnly = true; timeInput.readOnly = true;
+            updateFormTime();
+            formAutoTimeInterval = setInterval(updateFormTime, 1000);
+        } else {
+            dateInput.readOnly = false; timeInput.readOnly = false;
+            if (formAutoTimeInterval) clearInterval(formAutoTimeInterval);
+        }
+    }
+    document.getElementById('auto-time-switch').addEventListener('change', toggleAutoTime);
+
+    // --- Javanese Pasaran ---
+    function getJavaneseDate(dateObj, tzOffset) {
+        const h = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+        const p = ['Legi', 'Pahing', 'Pon', 'Wage', 'Kliwon'];
+        const localTimeMs = dateObj.getTime() + (tzOffset * 3600000);
+        const daySinceEpoch = Math.floor(localTimeMs / (1000 * 60 * 60 * 24));
+        let pIdx = (daySinceEpoch + 3) % 5; if(pIdx < 0) pIdx += 5;
+        let dIdx = (daySinceEpoch + 4) % 7; if(dIdx < 0) dIdx += 7;
+        return h[dIdx] + ' ' + p[pIdx];
+    }
+
+    // --- UTILITIES ---
+    function decToDMS(deg) {
+        let d = Math.floor(Math.abs(deg));
+        let minfloat = (Math.abs(deg) - d) * 60;
+        let m = Math.floor(minfloat);
+        let s = (minfloat - m) * 60;
+        return {d: d, m: m, s: s, sign: deg >= 0 ? 1 : -1};
+    }
+    function dmsToDec(d, m, s, sign) { return sign * (parseFloat(d) + parseFloat(m)/60 + parseFloat(s)/3600); }
+    function pad0(num) { return num.toString().padStart(2, '0'); }
+
+    // --- Astronomical Engine (NOAA Based) ---
+    function calcSunPosition(calcDateObj, lat, lon, tzOffset) {
+        const start = new Date(Date.UTC(calcDateObj.getUTCFullYear(), 0, 0));
+        const diff = calcDateObj.getTime() - start.getTime(); 
+        const dayOfYear = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hourUTC = calcDateObj.getUTCHours() + calcDateObj.getUTCMinutes()/60 + calcDateObj.getUTCSeconds()/3600;
+        
+        const g = (2 * Math.PI / 365.25) * (dayOfYear - 1 + hourUTC/24);
+        const eqTime = 229.18 * (0.000075 + 0.001868 * Math.cos(g) - 0.032077 * Math.sin(g) - 0.014615 * Math.cos(2 * g) - 0.040849 * Math.sin(2 * g));
+        const declination = 0.006918 - 0.399912 * Math.cos(g) + 0.070257 * Math.sin(g) - 0.006758 * Math.cos(2 * g) + 0.000907 * Math.sin(2 * g) - 0.002697 * Math.cos(3 * g) + 0.00148 * Math.sin(3 * g);
+        
+        const decDeg = declination * (180/Math.PI);
+        const timeOffset = eqTime + (4 * lon);
+        const trueSolarTime = (hourUTC * 60) + timeOffset; 
+        
+        let haDeg = (trueSolarTime / 4) - 180;
+        while(haDeg > 180) haDeg -= 360; while(haDeg < -180) haDeg += 360;
+        
+        const latRad = lat * (Math.PI / 180);
+        const decRad = declination;
+        const haRad = haDeg * (Math.PI / 180);
+        
+        const sinAlt = Math.sin(latRad) * Math.sin(decRad) + Math.cos(latRad) * Math.cos(decRad) * Math.cos(haRad);
+        const altDeg = Math.asin(sinAlt) * (180/Math.PI);
+        
+        const y = -Math.sin(haRad) * Math.cos(decRad);
+        const x = Math.sin(decRad) * Math.cos(latRad) - Math.cos(decRad) * Math.sin(latRad) * Math.cos(haRad);
+        let azDeg = Math.atan2(y, x) * (180/Math.PI);
+        if(azDeg < 0) azDeg += 360;
+        const shadowDeg = (azDeg + 180) % 360;
+        
+        return { decDeg, haDeg, altDeg, azDeg, shadowDeg, eqTime };
+    }
+
+    // --- Search for Alignment Window ---
+    function findAlignment(dateObj, lat, lon, qiblaDeg, tzOffset) {
+        let segments = []; let currentSegment = null;
+        let y = dateObj.getFullYear(); let m = dateObj.getMonth(); let d = dateObj.getDate();
+
+        for (let min = 0; min < 1440; min++) {
+            let h = Math.floor(min / 60); let mn = min % 60;
+            let scanDate = new Date(Date.UTC(y, m, d, h - tzOffset, mn, 0));
+            let pos = calcSunPosition(scanDate, lat, lon, tzOffset);
+            
+            let diffShadow = Math.abs(pos.shadowDeg - qiblaDeg);
+            if(diffShadow > 180) diffShadow = 360 - diffShadow;
+            
+            let diffSun = Math.abs(pos.azDeg - qiblaDeg);
+            if(diffSun > 180) diffSun = 360 - diffSun;
+
+            if (diffShadow < 0.6 || diffSun < 0.6) {
+                if (!currentSegment) currentSegment = { start: min, end: min };
+                else currentSegment.end = min;
+            } else {
+                if (currentSegment) { segments.push(currentSegment); currentSegment = null; }
+            }
+        }
+        if (currentSegment) segments.push(currentSegment);
+        return segments;
+    }
+
+    function getBestSegment(segments, targetMinOfDay) {
+        if(!segments || segments.length === 0) return null;
+        let best = segments[0]; let minDiff = 9999;
+        segments.forEach(seg => {
+            let mid = (seg.start + seg.end) / 2;
+            let diff = Math.abs(mid - targetMinOfDay);
+            if(diff < minDiff) { minDiff = diff; best = seg; }
+        });
+        return best;
+    }
+
+    // --- SUBMIT FORM ---
+    document.getElementById('falak-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const lat = dmsToDec(document.getElementById('lat-deg').value, document.getElementById('lat-min').value, document.getElementById('lat-sec').value, document.getElementById('lat-hemi').value);
+        const lon = dmsToDec(document.getElementById('lon-deg').value, document.getElementById('lon-min').value, document.getElementById('lon-sec').value, document.getElementById('lon-hemi').value);
+        
+        const dateVal = document.getElementById('calc-date').value;
+        const timeVal = document.getElementById('calc-time').value;
+        const tzOffset = parseInt(document.getElementById('calc-tz').value);
+        
+        const [yy, mm, dd] = dateVal.split('-');
+        const [hh, mnt, ss] = timeVal.split(':');
+        
+        const calcDateObj = new Date(Date.UTC(yy, mm-1, dd, hh - tzOffset, mnt, ss || 0));
+        
+        // Qibla Math
+        const latK = 21.422487; const lonK = 39.826206;
+        const toRad = Math.PI / 180; const toDeg = 180 / Math.PI;
+        
+        const phi1 = lat * toRad; const phi2 = latK * toRad;
+        const deltaLambda = (lonK - lon) * toRad;
+        
+        const y = Math.sin(deltaLambda);
+        const x = Math.cos(phi1) * Math.tan(phi2) - Math.sin(phi1) * Math.cos(deltaLambda);
+        let qiblaDeg = (Math.atan2(y, x) * toDeg + 360) % 360;
+        
+        // Haversine
+        const R = 6371; 
+        const aDist = Math.sin((phi2-phi1)/2)**2 + Math.cos(phi1) * Math.cos(phi2) * Math.sin(deltaLambda/2)**2;
+        const distance = R * 2 * Math.atan2(Math.sqrt(aDist), Math.sqrt(1-aDist));
+
+        // Sun Math
+        const pos = calcSunPosition(calcDateObj, lat, lon, tzOffset);
+        const decDMS = decToDMS(pos.decDeg);
+        
+        const alignments = findAlignment(calcDateObj, lat, lon, qiblaDeg, tzOffset);
+        const inputMinOfDay = parseInt(hh)*60 + parseInt(mnt);
+        const bestSeg = getBestSegment(alignments, inputMinOfDay);
+        
+        let tzLabel = document.getElementById('calc-tz').options[document.getElementById('calc-tz').selectedIndex].text;
+        
+        lastCalcData = {
+            lat, lon, latStr: formatDMSStr(lat, true), lonStr: formatDMSStr(lon, false),
+            dateStr: `${dd}/${mm}/${yy}`, timeStr: timeVal,
+            utcDateStr: `${pad0(calcDateObj.getUTCDate())}/${pad0(calcDateObj.getUTCMonth()+1)}/${calcDateObj.getUTCFullYear()}`,
+            utcTimeStr: `${pad0(calcDateObj.getUTCHours())}:${pad0(calcDateObj.getUTCMinutes())}:${pad0(calcDateObj.getUTCSeconds())}`,
+            tzSign: tzOffset > 0 ? '+' : (tzOffset < 0 ? '-' : ''), 
+            tzNum: Math.abs(tzOffset), // Diperbaiki dari toFixed(2) menjadi angka natural
+            tzLabel: tzLabel, tzOffset: tzOffset,
+            qiblaAz: qiblaDeg, distance: distance,
+            sunDec: pos.decDeg, sunHA: pos.haDeg, sunAlt: pos.altDeg, sunAz: pos.azDeg, shadowAz: pos.shadowDeg, eqTime: pos.eqTime,
+            decDMSStr: `${decDMS.sign < 0 ? '-' : ''}${decDMS.d}° ${decDMS.m}' ${decDMS.s.toFixed(1)}"`,
+            bestSeg: bestSeg, inputDate: calcDateObj
+        };
+
+        document.getElementById('result-box').style.display = 'block';
+        document.getElementById('result-box').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    });
+
+    function formatDMSStr(deg, isLat) {
+        let dms = decToDMS(deg);
+        let hemi = isLat ? (deg >= 0 ? 'Utara (N)' : 'Selatan (S)') : (deg >= 0 ? 'Timur (E)' : 'Barat (W)');
+        return `${dms.d}° ${dms.m}' ${dms.s.toFixed(1)}" ${hemi}`;
+    }
+    function formatHM(minTotal) { return `${pad0(Math.floor(minTotal/60))}:${pad0(minTotal%60)}:00`; }
+
+    // --- Generate HTML Report ---
+    function openReport() {
+        if(!lastCalcData.qiblaAz) return alert('Hitung data terlebih dahulu!');
+        
+        let d = lastCalcData;
+        let alignTextHTML = "<span class='text-danger'><strong>Tidak ada penyelarasan persis arah bayangan matahari yang akurat pada tanggal ini.</strong></span>";
+        
+        if (d.bestSeg) {
+            let dur = d.bestSeg.end - d.bestSeg.start; if(dur === 0) dur = 1;
+            let startT = formatHM(d.bestSeg.start); let endT = formatHM(d.bestSeg.end);
+            let nowMin = new Date().getHours() * 60 + new Date().getMinutes();
+            let validText = "";
+            
+            if (nowMin < d.bestSeg.start) validText = `<span class='text-warning'>Akan terjadi dalam ${d.bestSeg.start - nowMin} menit ke depan.</span>`;
+            else if (nowMin <= d.bestSeg.end) validText = `<span class='text-success fw-bold'>SEDANG TERJADI! Tersisa ${d.bestSeg.end - nowMin} Menit lagi.</span>`;
+            else validText = `<span class='text-secondary'>Waktu penyelarasan hari ini telah berlalu.</span>`;
+            
+            alignTextHTML = `
+                <ul>
+                    <li><strong>Azimut Matahari Saat Itu:</strong> ${Math.round(d.sunAz)}°</li>
+                    <li><strong>Azimut Bayangan Saat Itu:</strong> ${Math.round(d.shadowAz)}°</li>
+                    <li><strong>Rentang Waktu:</strong> Pukul <strong>${startT}</strong> s/d <strong>${endT}</strong> (Durasi: ${dur} menit)</li>
+                    <li><strong>Status Ketersediaan:</strong> ${validText}</li>
+                </ul>
+            `;
+        }
+        
+        let kesimpulanText = d.bestSeg 
+            ? `Berita bagus! Pada tanggal pengamatan ini, bayangan benda tegak akan otomatis mengarah ke Ka'bah (Kiblat) pada pukul <strong>${formatHM(d.bestSeg.start)} hingga ${formatHM(d.bestSeg.end)}</strong> ${d.tzLabel}. Dirikan tiang atau benda lurus secara tegak lurus (90°) di bidang datar pada jam tersebut, dan arah jatuh bayangannya adalah patokan Kiblat Anda!` 
+            : `Pada tanggal pengamatan ini, posisi bayangan matahari tidak ada yang memotong sejajar persis dengan garis Kiblat. Silakan gunakan Kompas (Aplikasi atau Manual) dan arahkan kompas tepat ke <strong>${d.qiblaAz.toFixed(1)}°</strong> dari arah Utara Sejati.`;
+
+        let reportHTML = `
+            <div class="text-center" style="border-bottom: 2px dashed #cbd5e1; padding-bottom: 15px; margin-bottom: 20px;">
+                <h4 style="color: var(--primary); font-weight: 800; margin-bottom: 5px;">LAPORAN HASIL PERHITUNGAN</h4>
+                <p class="text-muted m-0">Posisi Matahari & Arah Kiblat Terpadu</p>
+            </div>
+            
+            <p><strong><i class="fa-solid fa-map-location-dot text-primary me-2"></i> 1. DATA LOKASI PENGAMATAN</strong><br>
+            <strong>Alamat Lengkap:</strong> ${fullLocationName}<br>
+            <strong>Garis Lintang:</strong> ${d.latStr}<br>
+            <strong>Garis Bujur:</strong> ${d.lonStr}</p>
+            
+            <p><strong><i class="fa-solid fa-clock text-primary me-2"></i> 2. WAKTU PENGAMATAN</strong><br>
+            <strong>Waktu Lokal:</strong> Tanggal ${d.dateStr}, Pukul ${d.timeStr.replace(/:/g, '.')} (${d.tzLabel})<br>
+            <strong>Waktu UTC:</strong> ${d.utcDateStr}, Pukul ${d.utcTimeStr}<br>
+            <strong>Selisih Zona Waktu:</strong> UTC ${d.tzSign}${d.tzNum} jam</p>
+            
+            <p><strong><i class="fa-solid fa-compass text-primary me-2"></i> 3. HASIL PERHITUNGAN KIBLAT</strong><br>
+            <strong>Sudut Arah Kiblat:</strong> <span class="fs-5 text-success fw-bold">${d.qiblaAz.toFixed(2)}°</span> (Derajat dari Utara diputar searah jarum jam)<br>
+            <strong>Jarak ke Ka'bah:</strong> <strong>${d.distance.toLocaleString('id-ID', {maximumFractionDigits: 2})} KM</strong> (Garis lurus permukaan bumi)</p>
+            
+            <p><strong><i class="fa-solid fa-sun text-warning me-2"></i> 4. KONDISI MATAHARI PADA WAKTU TERSEBUT</strong><br>
+            <strong>Deklinasi Matahari:</strong> ${d.sunDec.toFixed(2)}° (DMS: ${d.decDMSStr})<br>
+            <strong>Sudut Jam :</strong> ${d.sunHA.toFixed(2)}°<br>
+            <strong>Ketinggian :</strong> ${d.sunAlt.toFixed(2)}°<br>
+            <strong>Azimut Matahari Asli:</strong> ${d.sunAz.toFixed(2)}°<br>
+            <strong>Azimut Bayangan Matahari:</strong> ${d.shadowAz.toFixed(2)}°<br>
+            <strong>Equation of Time:</strong> ${d.eqTime.toFixed(2)} Menit</p>
+            
+            <p><strong><i class="fa-solid fa-arrows-to-eye text-primary me-2"></i> 5. WAKTU RASHDUL QIBLAH</strong><br>
+            Kondisi saat arah bayangan matahari persis sejajar / menindih garis Kiblat:<br>
+            ${alignTextHTML}</p>
+            
+            <div class="mt-4 p-3 rounded" style="background-color: #f0fdf4; border: 1px solid #bbf7d0;">
+                <h6 class="text-success fw-bold"><i class="fa-solid fa-lightbulb text-warning me-2"></i>KESIMPULAN (CARA PRAKTIS)</h6>
+                <p class="m-0 text-dark" style="font-size: 0.95rem;">${kesimpulanText}</p>
+            </div>
+        `;
+        
+        document.getElementById('report-text').innerHTML = reportHTML;
+        document.getElementById('main-view').classList.remove('active');
+        document.getElementById('report-view').classList.add('active');
+    }
+
+    // --- FULLSCREEN LIVE ---
+    function openFullscreen() {
+        if(!lastCalcData.qiblaAz) return alert('Hitung data terlebih dahulu!');
+        
+        document.getElementById('main-view').classList.remove('active');
+        document.getElementById('fullscreen-view').classList.add('active');
+        
+        updateFullscreen(); 
+        liveInterval = setInterval(updateFullscreen, 1000); 
+    }
+    
+    function updateFullscreen() {
+        let d = lastCalcData;
+        const now = new Date(); 
+        
+        document.getElementById('fs-pasaran').innerText = getJavaneseDate(now, d.tzOffset);
+        document.getElementById('fs-date').innerText = `${now.getDate()} ${BULAN[now.getMonth()]} ${now.getFullYear()}`;
+        document.getElementById('fs-time').innerText = `${pad0(now.getHours())}:${pad0(now.getMinutes())}:${pad0(now.getSeconds())}`;
+        document.getElementById('fs-tz-badge').innerText = d.tzLabel;
+        
+        let utcNow = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), now.getUTCHours(), now.getUTCMinutes(), now.getUTCSeconds()));
+        let livePos = calcSunPosition(utcNow, d.lat, d.lon, d.tzOffset);
+        
+        drawCompass('fs-compass', d.qiblaAz, livePos.azDeg, livePos.shadowDeg);
+        
+        // Memperbarui UI Tampilan Penuh dengan Sudut Secara Live dan Jarak Detail
+        document.getElementById('fs-sun-deg').innerText = livePos.azDeg.toFixed(2) + '° (Azimut)';
+        document.getElementById('fs-shadow-deg').innerText = livePos.shadowDeg.toFixed(2) + '° (Azimut)';
+        document.getElementById('fs-qibla-deg').innerText = d.qiblaAz.toFixed(2) + '° (Putaran dari arah Utara Sejati)';
+        document.getElementById('fs-distance').innerText = d.distance.toLocaleString('id-ID', {maximumFractionDigits: 2}) + ' KM';
+        
+        let liveAlignments = findAlignment(utcNow, d.lat, d.lon, d.qiblaAz, d.tzOffset);
+        let nowMinOfDay = now.getHours() * 60 + now.getMinutes();
+        let currentBestSeg = getBestSegment(liveAlignments, nowMinOfDay);
+        
+        let validElem = document.getElementById('fs-validity');
+        if (currentBestSeg) {
+            let startT = formatHM(currentBestSeg.start);
+            let endT = formatHM(currentBestSeg.end);
+            
+            if (nowMinOfDay < currentBestSeg.start) {
+                validElem.innerHTML = `<i class="fa-solid fa-hourglass-start"></i> Mulai Dalam: ${currentBestSeg.start - nowMinOfDay} Menit <br><small class="text-light fw-normal">(@ ${startT} - ${endT})</small>`;
+                validElem.className = "fw-bold text-warning mb-0 mt-2";
+            } else if (nowMinOfDay <= currentBestSeg.end) {
+                validElem.innerHTML = `<i class="fa-solid fa-bullseye fa-fade"></i> SEDANG BERLANGSUNG! <br><small class="text-light fw-normal">Tersisa ${currentBestSeg.end - nowMinOfDay} Menit (@ ${startT} - ${endT})</small>`;
+                validElem.className = "fw-bold text-emerald mb-0 mt-2";
+            } else {
+                validElem.innerHTML = `<i class="fa-solid fa-clock-rotate-left"></i> Waktu Telah Lewat <br><small class="text-light fw-normal">(@ ${startT} - ${endT})</small>`;
+                validElem.className = "fw-bold text-secondary mb-0 mt-2";
+            }
+        } else {
+            validElem.innerHTML = "Tidak ada titik potong bayangan sejajar secara garis lurus hari ini.";
+            validElem.className = "fw-bold text-secondary mb-0 mt-2";
+        }
+    }
+
+    function drawCompass(canvasId, qibla, sun, shadow) {
+        const canvas = document.getElementById(canvasId);
+        const ctx = canvas.getContext('2d');
+        const w = canvas.width; const h = canvas.height;
+        const cx = w/2; const cy = h/2;
+        const r = Math.min(w, h)/2 - 30;
+
+        ctx.clearRect(0,0,w,h);
+
+        ctx.beginPath(); ctx.arc(cx, cy, r, 0, 2*Math.PI);
+        ctx.strokeStyle = 'rgba(255,255,255,0.2)'; ctx.lineWidth = 4; ctx.stroke();
+        
+        for(let i=0; i<360; i+=15) {
+            let rad = (i - 90) * Math.PI / 180;
+            let innerR = r - (i%90===0 ? 12 : 6);
+            ctx.beginPath();
+            ctx.moveTo(cx + innerR * Math.cos(rad), cy + innerR * Math.sin(rad));
+            ctx.lineTo(cx + r * Math.cos(rad), cy + r * Math.sin(rad));
+            ctx.strokeStyle = i%90===0 ? '#fff' : 'rgba(255,255,255,0.3)';
+            ctx.lineWidth = i%90===0 ? 3 : 1;
+            ctx.stroke();
+        }
+
+        ctx.font = 'bold 20px Arial'; ctx.fillStyle = '#fff';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText('U', cx, cy - r - 18);
+        ctx.fillText('S', cx, cy + r + 18);
+        ctx.fillText('T', cx + r + 18, cy);
+        ctx.fillText('B', cx - r - 18, cy);
+
+        function drawLine(azimuth, color, label, lengthScale=1) {
+            const rad = (azimuth - 90) * Math.PI / 180;
+            const x = cx + (r * lengthScale) * Math.cos(rad);
+            const y = cy + (r * lengthScale) * Math.sin(rad);
+            
+            ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(x, y);
+            ctx.strokeStyle = color; ctx.lineWidth = 4; ctx.lineCap = 'round'; ctx.stroke();
+            
+            ctx.beginPath(); ctx.arc(x, y, 6, 0, 2*Math.PI); ctx.fillStyle = color; ctx.fill();
+        }
+
+        drawLine(qibla, '#10b981', 'Kiblat', 1);   
+        drawLine(sun, '#ef4444', 'Matahari', 0.85); 
+        drawLine(shadow, '#facc15', 'Bayangan', 0.85); 
+        
+        ctx.beginPath(); ctx.arc(cx, cy, 8, 0, 2*Math.PI); ctx.fillStyle = '#fff'; ctx.fill();
+    }
+
+    function closeView(viewId) {
+        document.getElementById(viewId).classList.remove('active');
+        document.getElementById('main-view').classList.add('active');
+        if(liveInterval) clearInterval(liveInterval); 
+    }
+
+    // --- Reverse Geocoding API ---
+    async function getLocationName(lat, lon) {
+        const locElement = document.getElementById('location-name');
+        try {
+            locElement.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Melacak alamat lengkap...';
+            const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18`);
+            const data = await res.json();
+            if(data && data.display_name) {
+                fullLocationName = data.display_name; 
+                let shortName = data.address.city || data.address.regency || data.address.county || data.address.town || data.address.village || "Wilayah Terdeteksi";
+                locElement.innerHTML = `<strong>${shortName}</strong> <br><small class="text-light" style="opacity: 0.8; font-size: 0.75rem;">${fullLocationName.substring(0, 50)}...</small>`;
+            } else {
+                fullLocationName = `Lat: ${lat.toFixed(4)}, Lon: ${lon.toFixed(4)}`;
+                locElement.innerHTML = "Koordinat terdeteksi (Alamat tidak ditemukan)";
+            }
+        } catch (e) { 
+            fullLocationName = `Titik GPS Lat: ${lat.toFixed(4)}, Lon: ${lon.toFixed(4)} (Data Offline)`;
+            locElement.innerHTML = "Offline - Koordinat diset."; 
+        }
+    }
+
+    function requestLocation() {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                function(pos) {
+                    let lat = pos.coords.latitude; let lon = pos.coords.longitude;
+                    document.getElementById('gps-card').style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+                    
+                    let latDMS = decToDMS(lat);
+                    document.getElementById('lat-deg').value = latDMS.d; document.getElementById('lat-min').value = latDMS.m;
+                    document.getElementById('lat-sec').value = latDMS.s.toFixed(2); document.getElementById('lat-hemi').value = lat >= 0 ? "1" : "-1";
+                    
+                    let lonDMS = decToDMS(lon);
+                    document.getElementById('lon-deg').value = lonDMS.d; document.getElementById('lon-min').value = lonDMS.m;
+                    document.getElementById('lon-sec').value = lonDMS.s.toFixed(2); document.getElementById('lon-hemi').value = lon >= 0 ? "1" : "-1";
+                    
+                    getLocationName(lat, lon);
+                }, 
+                function(err) {
+                    document.getElementById('gps-card').style.background = 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)';
+                    document.getElementById('location-name').innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> GPS ditolak/gagal. Isi manual.';
+                    fullLocationName = "Koordinat Diinput Manual / GPS Dimatikan";
+                }, { enableHighAccuracy: true }
+            );
+        }
+    }
+
+    // --- INIT ---
+    window.onload = function() {
+        initTimezones();
+        toggleAutoTime();
+        requestLocation();
+    };
+</script>
+</body>
+</html>
